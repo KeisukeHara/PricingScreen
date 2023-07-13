@@ -1,23 +1,53 @@
 import streamlit as st
+import requests
+import json
 from datetime import date
 
-class TradeData:
-    def __init__(self, strike_price, expiration_date, option_type):
-        self.strike_price = strike_price
-        self.expiration_date = expiration_date
-        self.option_type = option_type
+# リクエストURL
+URL = "https://intfutoppricing.onrender.com/calc/calc_pv/"
 
 # Streamlitアプリの設定
-st.title("金利先物オプション 取引データ入力")
+st.title("金利先物オプション時価計算画面")
 
 # 取引データの入力フォーム
+st.header("取引データ入力")
 strike_price = st.number_input("ストライク価格", value=100.0, step=0.1)
-expiration_date = st.date_input("オプションの満期日", value=date.today())
-option_type = st.selectbox("オプションのタイプ", ["Call", "Put"])
+expiration_date = st.text_input("オプションの満期日", value="20230914")
+amount = st.number_input("額面", value=1000000)
+call_put = st.selectbox("Call/Put", ["C", "P"])
+buy_sell = st.selectbox("Buy/Sell", ["B", "S"])
 
-# 取引データの表示
-trade_data = TradeData(strike_price, expiration_date, option_type)
-st.header("取引データ")
-st.write("ストライク価格:", trade_data.strike_price)
-st.write("オプションの満期日:", trade_data.expiration_date)
-st.write("オプションのタイプ:", trade_data.option_type)
+# マーケットデータの入力フォーム
+st.header("マーケットデータ入力")
+evaluation_date = st.text_input("評価日", value="20230712")
+spot_date = st.text_input("スポット日", value="20230714")
+interest_rate = st.number_input("金利", value=0.01, step=0.001)
+volatility = st.number_input("ボラティリティ", value=0.2, step=0.001)
+underlying_price = st.number_input("原資産価格", value=105.0, step=0.001)
+
+# 計算リクエスト
+body = {
+  "trade_data": {
+    "trade_id": "string",
+    "ccy": "string",
+    "strike": strike_price,
+    "expiration_date": expiration_date,
+    "call_put": call_put,
+    "buy_sell": buy_sell,
+    "amount": amount
+  },
+  "market_data": {
+    "evaluation_date": evaluation_date,
+    "spot_date": spot_date,
+    "interest_rate": interest_rate,
+    "volatility": volatility,
+    "underlying_price": underlying_price
+  }
+}
+
+res = requests.post(URL, json.dumps(body))
+
+# 計算結果の表示
+st.header("計算結果")
+st.write("premium:", res.json()["premium"])
+st.write("pv:", res.json()["pv"])
